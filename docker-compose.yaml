@@ -1,64 +1,88 @@
+#Docker compose: giúp chạy nhiều container cùng một lúc
 version: '2.1'
 
 services:
-  zoo1:
-    image: confluentinc/cp-zookeeper:7.3.2
-    hostname: zoo1
-    container_name: zoo1
+  zoo1: #tên service. Đây là zookeeper giúp quản lý kafka
+    image: confluentinc/cp-zookeeper:7.3.2 #image với tag 7.3.2
+    hostname: zoo1 #tên nội bộ của container
+    container_name: zoo1 #tên bên ngoài của container
     ports:
-      - "2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_SERVER_ID: 1
-      ZOOKEEPER_SERVERS: zoo1:2888:3888
+      - "2181:2181" #mapping port bên ngoài là 2181 với port nội bộ là 2181
+    environment: #các biến mỗi trường cần để cấu hình image cp-zookeeper
+      ZOOKEEPER_CLIENT_PORT: 2181 #cổng client dùng để kết nối đến zookeeper
+      ZOOKEEPER_SERVER_ID: 1 #mỗi zookeeper server cần 1 id => đặt là 1
+      ZOOKEEPER_SERVERS: zoo1:2888:3888 #danh sách các server trong zookeeper cluster: port giao tiếp giữa các zookeepr: port bầu chọn leader
     networks:
-      - broker-kafka
+      - broker-kafka #gắn container vào network (các container cùng network có thể giao tiếp nội bộ mà không cần mở port ra ngoài)
 
-  kafka1:
-    image: confluentinc/cp-kafka:7.3.2
-    hostname: kafka1
-    container_name: kafka1
+  kafka1: #tên service
+    image: confluentinc/cp-kafka:7.3.2 #image kafka
+    hostname: kafka1 #tên nội bộ của container
+    container_name: kafka1 #tên bên ngoài của container
     ports:
-      - "9092:9092"
+      - "9092:9092" #mở 2 cổng cho kafka
       - "29092:29092"
     environment:
+      #giúp thông báo đến listeners cách thức kết nối kafka
+      #Internal: cách kết nối đến container này nếu cùng network
+      #External: cách kết nối đến container này nếu nằm cùng network
+      #Docker: dành cho ứng dụng chạy trong docker desktop
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      #phương thức bảo mật của từng cách kết nối
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      #các kafka broker sẽ khai báo với nhau qua internal
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      #kết nối zookeeper thông qua zoo1:2181 trong network
       KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      #id của kafka broker
       KAFKA_BROKER_ID: 1
+      #cấu hình mức độ log của kafka
       KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      #bật bảo mật nhưng không khóa
       KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+      #số parition mặc định
       KAFKA_NUM_PARTITIONS: 4
+    #cần khởi động sau zoo1
     depends_on:
       - zoo1
+    #network của container
     networks:
       - broker-kafka
 
-  kafka2:
-    image: confluentinc/cp-kafka:7.3.2
-    hostname: kafka2
-    container_name: kafka2
+  kafka2: #kafka giúp nhận dữ liệu từ bên ngoài vào
+    image: confluentinc/cp-kafka:7.3.2 #image
+    hostname: kafka2 #tên nội bộ
+    container_name: kafka2 #tên bên ngoài
     ports:
-      - "9093:9093"
+      - "9093:9093" #nối với 2 port
       - "29093:29093"
     environment:
+      #cách thức kết nối đến container này
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:19093,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9093,DOCKER://host.docker.internal:29093
+      #phương thức bảo mật
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      #kết nối giữa các broker thông qua internal
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      #nối với zookeeper zoo1
       KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      #id của broker này
       KAFKA_BROKER_ID: 2
+      #set loại log trả về
       KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      #đặt bảo mật
       KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
       KAFKA_NUM_PARTITIONS: 4
+    #cần zoo1 khởi tọa trước
     depends_on:
       - zoo1
     networks:
       - broker-kafka
 
+  
   kafka3:
+    #Khởi tạo tương tự thêm 1 broker nữa ID là 3
     image: confluentinc/cp-kafka:7.3.2
     hostname: kafka3
     container_name: kafka3
@@ -80,18 +104,18 @@ services:
     networks:
       - broker-kafka
 
-  kafdrop:
-     image: obsidiandynamics/kafdrop:3.27.0
+  kafdrop: #là một container giúp phục vụ web UI cho Kafka giúp trực quan rõ hon
+     image: obsidiandynamics/kafdrop:3.27.0 #image
      networks:
-       - broker-kafka
+       - broker-kafka #chung network với 3 kafka và 1 zookeeper
      depends_on:
-       - zoo1
+       - zoo1 #phụ thuộc vào zookeeper
      ports:
-       - 19000:9000
-     environment:
+       - 19000:9000 #ánh xạ tới cổng 190000 bên ngoài => localhost:19000 giúp mở kafka drop UI
+     environment: #kết nối ctowis 3 kafka
        KAFKA_BROKERCONNECT: kafka1:29092,kafka2:29093,kafka3:29094
 
-#  kafka-ui:
+#  kafka-ui: #tác dụng giống kafka drop nhưng hiện đại hơn
 #    image: provectuslabs/kafka-ui:latest
 #    container_name: kafka-ui
 #    ports:
@@ -103,77 +127,80 @@ services:
 #    networks:
 #      - broker-kafka
 
-  spark-master:
-    image: docker.io/bitnami/spark:3.3
-    container_name: ktech_spark
+  spark-master: #spark: lấy dữ liệu real-time từ kafka để xử lý. Spark master: quản lý các spark worker
+    image: docker.io/bitnami/spark:3.3 #image của spark
+    container_name: ktech_spark #tên của container, host name mặc định là tên service
     environment:
-      - SPARK_MODE=master
-      - SPARK_DAEMON_JAVA_OPTS=-Dspark.ui.port=8085
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-      - SPARK_USER=spark
+      - SPARK_MODE=master #chạy ở chế độ master, giám sát h/đ worker
+      - SPARK_DAEMON_JAVA_OPTS=-Dspark.ui.port=8085 #gắn cổng UI nội bọ 8085
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no #tắt xác thực rpc
+      - SPARK_RPC_ENCRYPTION_ENABLED=no #tắt mã hóa RPC
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no #tắt lưu trữ mã hóa cục bộ
+      - SPARK_SSL_ENABLED=no #tắt ssl
+      - SPARK_USER=spark #user là spark
     ports:
-      - "8080:8080"  # Spark Web UI
-      - "7077:7077"
+      - "8080:8080"  #  port phục vụ UI Web
+      - "7077:7077" #port kết nối các worker
     depends_on:
-      - kafka1  # Ensure Kafka is up before starting Spark
+      - kafka1  # yêu cầu kafka chạy trước
       - kafka2
       - kafka3
     volumes:
-      - ./:/app/ # Mount your Spark Streaming app
-    restart: unless-stopped
+      - ./:/app/ #mount thư mục hiện tại vào /app trong container
+    restart: unless-stopped #tự động restart nếu gặp lỗi
     networks:
-      - broker-kafka
+      - broker-kafka #gán network cùng kafka
 
-  spark-submit:
-    image: docker.io/bitnami/spark:3.3
-    container_name: ktech_spark_submit
-    environment:
-      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
-      INFLUXDB_MEASUREMENT: ${INFLUXDB_MEASUREMENT}
-      INFLUX_ORG: ${INFLUX_ORG}
-      INFLUX_TOKEN: ${INFLUX_TOKEN}
+  spark-submit: #submit: giúp submit job lên cụm spark. Job xử lý dữ liệu dạng streaming (liên tục)
+    image: docker.io/bitnami/spark:3.3 #image:tag
+    container_name: ktech_spark_submit #tên container
+    environment: #xác định spark kết nối với database nào. Biến được khởi tạo trong .env
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}  #chỉ định database sẽ ghi vào
+      INFLUXDB_MEASUREMENT: ${INFLUXDB_MEASUREMENT} #chỉ định bảng sẽ ghi vào
+      INFLUX_ORG: ${INFLUX_ORG} #Tên organization 
+      INFLUX_TOKEN: ${INFLUX_TOKEN} #Access token
     volumes:
-      - ./:/app/
-      - ./packages/postgresql-42.5.4.jar:/opt/bitnami/spark/jars/postgresql-42.5.4.jar
+      - ./:/app/ #mount thư mục hiện tại vào /app trong contianer
+      - ./packages/postgresql-42.5.4.jar:/opt/bitnami/spark/jars/postgresql-42.5.4.jar #thêm .jar của postgresql vào spark để spark có thể ghi dữ liệu ra postgresql
+    #Lệnh được chạy trong container:
+    #Cài đặt requirement.txt => tải package kafka connector => báo hiệu hãy gửi job đến spark_master:7077. consusmer.py là python chứa spark streaming job
     command: [ "sh", "-c", "pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/consumer.py" ]
-    depends_on:
+    depends_on: #yêu cầu spark master chạy trước
       - spark-master
 #    restart: unless-stopped
-    networks:
+    networks: #thuộc network broker-kafka
       - broker-kafka
 
-  spark-submit2:
-    image: docker.io/bitnami/spark:3.3
-    container_name: spark-batch-processing
+  spark-submit2: #submit job lên cụm spark. Job xử lý dữ liệu dạng batch (theo lô)
+    image: docker.io/bitnami/spark:3.3 #image
+    container_name: spark-batch-processing #tên container
     volumes:
-      - ./:/app/
+      - ./:/app/ #mount volume
+    #cài requirement.txt => cài package kafka connector => gửi job batch processing lên spark master
     command: [ "sh", "-c", "pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/batch_processing.py" ]
-    depends_on:
+    depends_on: #cần spark master khởi tạo trước
       - spark-master
     networks:
       - broker-kafka
 
-  spark-worker:
-    image: docker.io/bitnami/spark:3.3
+  spark-worker: #spark worker chạy công việc được giao từ spark master
+    image: docker.io/bitnami/spark:3.3 
     environment:
       SPARK_MODE: worker
-      SPARK_MASTER_URL: spark://spark-master:7077
-      SPARK_WORKER_MEMORY: 1G
+      SPARK_MASTER_URL: spark://spark-master:7077 #địa chỉ của spark măster
+      SPARK_WORKER_MEMORY: 1G #giới hạn tài nguyên cho worker 1GB RAM, 1 CPU Core
       SPARK_WORKER_CORES: 1
-      SPARK_RPC_AUTHENTICATION_ENABLED: no
+      SPARK_RPC_AUTHENTICATION_ENABLED: no #bỏ xác thực và mã hóa RPC
       SPARK_RPC_ENCRYPTION_ENABLED: no
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
       SPARK_SSL_ENABLED: no
-      SPARK_USER: spark
+      SPARK_USER: spark #user là spark
     ports:
-      - "8081:8081"
+      - "8081:8081" #ánh xạ đến cổng port 8081
     networks:
-      - broker-kafka
+      - broker-kafka #gán network
 
-  spark-worker2:
+  spark-worker2: #tương tự spark-worker
     image: docker.io/bitnami/spark:3.3
     environment:
       SPARK_MODE: worker

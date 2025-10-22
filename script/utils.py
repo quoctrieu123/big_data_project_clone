@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-def load_environment_variables(env_file_path=".env"):
+def load_environment_variables(env_file_path=".env"): #load biến môi trường từ file .env hoặc hệ thống
     """
     Load environment variables from a .env file or system environment.
 
@@ -16,7 +16,7 @@ def load_environment_variables(env_file_path=".env"):
         load_dotenv(env_file_path)
 
     env_vars = {}
-    for key, value in os.environ.items():
+    for key, value in os.environ.items(): #tạo dictionary với các key, value từ biến môi trường
         env_vars[key] = value
 
     return env_vars

@@ -217,116 +217,117 @@ services:
     networks:
       - broker-kafka
 
-  namenode:
-    image: apache/hadoop:3
-    hostname: namenode
-    command: [ "hdfs", "namenode" ]
-    depends_on:
+  namenode: #namenode phục vụ cho HDFS
+    image: apache/hadoop:3 #image hadooop
+    hostname: namenode #tên container trong network
+    command: [ "hdfs", "namenode" ]  #command khởi động namenode, giúp khởi động tiến trình namenode
+    depends_on: #yêu cầu resourcemanager và nodemanager khởi động trước (là các thành phần của YARN)
       - resourcemanager
       - nodemanager
     ports:
-      - 9870:9870
+      - 9870:9870 #ánh xạ cổng port để mở giao diện web của namenode
     env_file:
-      - ./config-hadoop
+      - ./config-hadoop #file chứa các biến môi trường cấu hình hadoop
     environment:
-      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name" #chỉ định thư mục lưu trữ metadata của namenode
     networks:
-      - broker-kafka
+      - broker-kafka #gắn network
     volumes:
-      - hadoop:/home/
-    restart: on-failure
+      - hadoop:/home/ #mount volume hadoop vào /home trong container
+    restart: on-failure #tự động khởi động lại nếu gặp lỗi
 
-  datanode:
-    image: apache/hadoop:3
-    command: [ "hdfs", "datanode" ]
+  datanode: #datanode phục vụ lưu trữ dữ liệu trong HDFS
+    image: apache/hadoop:3 #image hadoop
+    command: [ "hdfs", "datanode" ] #command khởi động datanode
     depends_on:
-      - namenode
-    env_file:
+      - namenode #yêu cầu namenode khởi động trước
+    env_file: #file chứa biến môi trường cấu hình hadoop
       - ./config-hadoop
     networks:
       - broker-kafka
-    volumes:
+    volumes: #mount volume hadoop vào /home trong container
       - hadoop:/home/
     restart: on-failure
 
-  resourcemanager:
-    image: apache/hadoop:3
-    hostname: resourcemanager
-    command: [ "yarn", "resourcemanager" ]
+  resourcemanager: #quản lý tài nguyên cluster, phân bổ tài nguyên cho các ứng dụng chạy trên YARN
+    image: apache/hadoop:3 #image hadoop
+    hostname: resourcemanager  #tên container trong network
+    command: [ "yarn", "resourcemanager" ] #command khởi động resourcemanager
     ports:
-      - 8088:8088
+      - 8088:8088 #ánh xạ cổng để mở giao diện web của resourcemanager
     env_file:
-      - ./config-hadoop
+      - ./config-hadoop #file chứa biến môi trường cấu hình hadoop
     volumes:
-      - ./test.sh:/opt/test.sh
+      - ./test.sh:/opt/test.sh #mount file test.sh vào /opt/test.sh trong container
     networks:
       - broker-kafka
-    restart: on-failure
+    restart: on-failure #tự động khởi động lại nếu gặp lỗi
 
-  nodemanager:
-    image: apache/hadoop:3
-    hostname: nodemanager
-    command: [ "yarn", "nodemanager" ]
+  nodemanager: #quản lý tài nguyên trên mỗi nút trong cluster, giám sát và báo cáo trạng thái tài nguyên của nút đó cho resourcemanager
+    image: apache/hadoop:3 #image hadoop
+    hostname: nodemanager #tên container trong network
+    command: [ "yarn", "nodemanager" ] #command khởi động nodemanager
     env_file:
-      - ./config-hadoop
+      - ./config-hadoop #file chứa biến môi trường cấu hình hadoop
     networks:
-      - broker-kafka
+      - broker-kafka #gắn network
     volumes:
-      - hadoop:/home/
+      - hadoop:/home/  #mount volume hadoop vào /home trong container
     restart: on-failure
 
-  influxdb:
-    image: bitnami/influxdb:2.5.1
-    container_name: influxdb
-    restart: always
+  influxdb: #InfluxDB: database dạng time-series để lưu trữ dữ liệu thời gian thực
+    image: bitnami/influxdb:2.5.1 #image influxdb
+    container_name: influxdb #tên container
+    restart: always #tự động khởi động lại nếu gặp lỗi hoặc bị tắt
     ports:
-      - 8086:8086
+      - 8086:8086 #ánh xạ cổng bên ngoài để truy cập InfluxDB
     volumes:
-      - .\influxdb:/bitnami/influxdb
+      - .\influxdb:/bitnami/influxdb #mount thư mục influxdb trên máy host vào thư mục trong container để lưu trữ dữ liệu bền vững
     environment:
-      INFLUXDB_ADMIN_USER_PASSWORD: ${INFLUXDB_ADMIN_USER_PASSWORD}
+      INFLUXDB_ADMIN_USER_PASSWORD: ${INFLUXDB_ADMIN_USER_PASSWORD} #các biến môi trường xác thực truy cập influxdb, được lấy từ file .env
       INFLUXDB_USER: ${INFLUXDB_USER}
       INFLUXDB_USER_PASSWORD: ${INFLUXDB_USER_PASSWORD}
       INFLUXDB_ADMIN_USER_TOKEN: ${INFLUX_TOKEN}
 
-      INFLUXDB_DB: ${INFLUXDB_DB}   # the database to be created on first startup
-      INFLUXDB_HTTP_AUTH_ENABLED: true  # enable http auth
-      INFLUX_TOKEN: ${INFLUX_TOKEN}
-      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
-      INFLUX_ORG: ${INFLUX_ORG}
-      INFLUXDB_MEASUREMENT: ${INFLUXDB_MEASUREMENT}
+      INFLUXDB_DB: ${INFLUXDB_DB}   # tên database mặc định khi khởi tạo
+      INFLUXDB_HTTP_AUTH_ENABLED: true  # yêu cầu token/username/password để truy cập InfluxDB
+      INFLUX_TOKEN: ${INFLUX_TOKEN} # access token để xác thực
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET} #tên bucket (tương đương database) để lưu trữ dữ liệu
+      INFLUX_ORG: ${INFLUX_ORG} #tên organization
+      INFLUXDB_MEASUREMENT: ${INFLUXDB_MEASUREMENT} #tên measurement (tương đương bảng) để lưu trữ dữ liệu
     networks:
       - broker-kafka
 
-  grafana:
-    image: grafana/grafana-oss:8.4.3
-    volumes:
+  grafana: #Grafana: công cụ trực quan hóa dữ liệu từ InfluxDB
+    image: grafana/grafana-oss:8.4.3 #image grafana
+    volumes: #mount volume để lưu trữ dữ liệu bền vững
       - grafana-storage:/var/lib/grafana:rw
     depends_on:
-      - influxdb
+      - influxdb #yêu cầu influxdb khởi động trước
     ports:
-      - 3000:3000
+      - 3000:3000 #ánh xạ cổng để truy cập giao diện web của Grafana
     networks:
-      - broker-kafka
+      - broker-kafka #gắn network
 
-  mongodb:
+  mongodb: #MongoDB: database NoSQL lưu trữ dữ liệu dạng document
     image: mongo:latest
-    container_name: mongodb
+    container_name: mongodb #tên container bên ngoài
     ports:
-      - "27017:27017"
+      - "27017:27017" #ánh xạ cổng để truy cập MongoDB
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_USERNAME: root #biến môi trường để khởi tạo user và password truy cập cho MongoDB
       MONGO_INITDB_ROOT_PASSWORD: admin
     volumes:
-      - mongodb-data:/data/db
+      - mongodb-data:/data/db #mount volume để lưu trữ dữ liệu bền vững
     networks:
       - broker-kafka
-
+#phần cuối của docker-compose.yaml sẽ lưu trữ các volume và network được sử dụng chung bởi các container ở trên
+#các phần này nằm ngoài container nên dữ liệu sẽ không bị mất khi container bị xóa hoặc khởi động lại
 volumes:
-  grafana-storage:
-  hadoop:
-  mongodb-data:
+  grafana-storage: #volume lưu trữ dữ liệu của grafana
+  hadoop: #volume lưu trữ dữ liệu của hadoop
+  mongodb-data: #volume lưu trữ dữ liệu của mongodb
 
 networks:
-  broker-kafka:
-    driver: bridge
+  broker-kafka: #định nghĩa network có tên broker-kafka
+    driver: bridge #tạo network kiểu bridge: các container trong network này có thể giao tiếp nội bộ với nhau

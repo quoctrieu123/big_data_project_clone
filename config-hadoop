@@ -1,29 +1,31 @@
-CORE-SITE.XML_fs.default.name=hdfs://namenode
+#file này định nghĩa các biến để images hadoop có thể sinh ra các file core-site.xml, hdfs-site.xml, mapred-site.xml, yarn-site.xml và capacity-scheduler.xml với các cấu hình phù hợp khi khởi động container hadoop
+
+CORE-SITE.XML_fs.default.name=hdfs://namenode #coi namenode là địa chỉ hdfs chính
 CORE-SITE.XML_fs.defaultFS=hdfs://namenode
-HDFS-SITE.XML_dfs.namenode.rpc-address=namenode:8020
-HDFS-SITE.XML_dfs.webhdfs.enabled=true
-HDFS-SITE.XML_dfs.permissions=false
-HDFS-SITE.XML_dfs.replication=1
-MAPRED-SITE.XML_mapreduce.framework.name=yarn
-MAPRED-SITE.XML_yarn.app.mapreduce.am.env=HADOOP_MAPRED_HOME=$HADOOP_HOME
-MAPRED-SITE.XML_mapreduce.map.env=HADOOP_MAPRED_HOME=$HADOOP_HOME
-MAPRED-SITE.XML_mapreduce.reduce.env=HADOOP_MAPRED_HOME=$HADOOP_HOME
-YARN-SITE.XML_yarn.resourcemanager.hostname=resourcemanager
-YARN-SITE.XML_yarn.nodemanager.pmem-check-enabled=false
-YARN-SITE.XML_yarn.nodemanager.delete.debug-delay-sec=600
-YARN-SITE.XML_yarn.nodemanager.vmem-check-enabled=false
-YARN-SITE.XML_yarn.nodemanager.aux-services=mapreduce_shuffle
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.maximum-applications=10000
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.maximum-am-resource-percent=0.1
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.resource-calculator=org.apache.hadoop.yarn.util.resource.DefaultResourceCalculator
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.queues=default
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.capacity=100
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.user-limit-factor=1
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.maximum-capacity=100
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.state=RUNNING
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.acl_submit_applications=*
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.acl_administer_queue=*
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.node-locality-delay=40
+HDFS-SITE.XML_dfs.namenode.rpc-address=namenode:8020 #địa chỉ rpc của namenode, nơi datanode và client kết nối để thực hiện các thao tác trên hdfs   
+HDFS-SITE.XML_dfs.webhdfs.enabled=true #bât webhdfs để truy cập hdfs qua giao thức http
+HDFS-SITE.XML_dfs.permissions=false #tắt kiểm tra quyền truy cập hdfs để tránh lỗi permission
+HDFS-SITE.XML_dfs.replication=1 #số bản sao mặc định của mỗi file trên hdfs
+MAPRED-SITE.XML_mapreduce.framework.name=yarn #chạy job mapreduce trên yarn
+MAPRED-SITE.XML_yarn.app.mapreduce.am.env=HADOOP_MAPRED_HOME=$HADOOP_HOME #biến môi trường cho application master của mapreduce
+MAPRED-SITE.XML_mapreduce.map.env=HADOOP_MAPRED_HOME=$HADOOP_HOME #biến môi trường cho các task map
+MAPRED-SITE.XML_mapreduce.reduce.env=HADOOP_MAPRED_HOME=$HADOOP_HOME #biến môi trường cho các task reduce
+YARN-SITE.XML_yarn.resourcemanager.hostname=resourcemanager #địa chỉ hostname của resourcemanager
+YARN-SITE.XML_yarn.nodemanager.pmem-check-enabled=false #tắt kiểm tra bộ nhớ vật lý để tránh lỗi khi chạy trên docker
+YARN-SITE.XML_yarn.nodemanager.delete.debug-delay-sec=600 #giữ file tạm thời trong 600 giây để dễ dàng debug
+YARN-SITE.XML_yarn.nodemanager.vmem-check-enabled=false  #tắt kiểm tra bộ nhớ ảo để tránh lỗi khi chạy trên docker
+YARN-SITE.XML_yarn.nodemanager.aux-services=mapreduce_shuffle #khai báo dịch vụ phụ cho nodemanager để hỗ trợ mapreduce
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.maximum-applications=10000 #giới hạn số job tối đa YARN có thể xử lý đồng thời
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.maximum-am-resource-percent=0.1 #giới hạn tối đa 10% tài nguyên cụm cho application master
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.resource-calculator=org.apache.hadoop.yarn.util.resource.DefaultResourceCalculator #dùng công thức tính tài nguyên mặc định
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.queues=default #chỉ có một hàng đợi là default
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.capacity=100 #gán 100% tài nguyên cho hàng đợi default
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.user-limit-factor=1 #giới hạn người dùng trong hàng đợi default
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.maximum-capacity=100 #tối đa 100% tài nguyên cho hàng đợi default
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.state=RUNNING #kích hoạt queue default
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.acl_submit_applications=* #cho phép tất cả người dùng gửi job vào queue default
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.acl_administer_queue=* #cho phép tất cả người dùng quản lý queue default
+CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.node-locality-delay=40 #trì hoãn tối đa 40 giây để tìm kiếm các container cục bộ trên nút
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.queue-mappings=
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.queue-mappings-override.enable=false
 

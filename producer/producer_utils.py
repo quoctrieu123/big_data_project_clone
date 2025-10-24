@@ -46,7 +46,7 @@ def send_to_kafka(producer, topic, key, partition, message): # hàm gửi tin nh
     # producer.produce(topic, key=key, partition=0, value=json.dumps(message).encode("utf-8"))
     #gửi tin nhắn đến topic với key (xác định partition), value và callback để báo cáo kết quả gửi
     producer.produce(topic, key=key, value=json.dumps(
-        message).encode("utf-8"), callback=delivery_report) 
+        message, default= str).encode("utf-8"), callback=delivery_report) 
     producer.flush() #đảm bảo message được gửi đi ngay lập tức
 
 

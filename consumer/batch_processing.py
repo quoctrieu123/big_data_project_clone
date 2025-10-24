@@ -1,3 +1,4 @@
+#File này có tác dụng đọc dữ liệu từ HDFS, xử lý dữ liệu chứng khoán và tính toán các thống kê cơ bản cũng như các chỉ số kỹ thuật.
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, TimestampType, DoubleType
 from pyspark.sql.functions import to_timestamp
@@ -17,7 +18,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 # Setup the HDFS client
-hdfs = pyhdfs.HdfsClient(hosts="namenode:9870", user_name="hdfs")
+hdfs = pyhdfs.HdfsClient(hosts="localhost:9870", user_name="hdfs")
 directory = '/data'
 files = hdfs.listdir(directory)
 print("Files in '{}':".format(directory), files)

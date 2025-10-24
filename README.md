@@ -28,7 +28,7 @@ Set up and change config (if necessary) at `config-hadoop` and `.env`
 ## Usage
 To initialize and execute components in the Docker environment, use commands:
 ```
-docker-compose --env-file ../.\.env up -d --remove-orphans --build
+docker-compose --env-file ../big_data_project_clone\.env up -d --remove-orphans --build
 ```
 
 

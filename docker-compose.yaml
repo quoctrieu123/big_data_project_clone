@@ -128,7 +128,7 @@ services:
 #      - broker-kafka
 
   spark-master: #spark: lấy dữ liệu real-time từ kafka để xử lý. Spark master: quản lý các spark worker
-    image: docker.io/bitnami/spark:3.3 #image của spark
+    image: apache/spark:3.5.3 #image spark với tag
     container_name: ktech_spark #tên của container, host name mặc định là tên service
     environment:
       - SPARK_MODE=master #chạy ở chế độ master, giám sát h/đ worker
@@ -152,7 +152,7 @@ services:
       - broker-kafka #gán network cùng kafka
 
   spark-submit: #submit: giúp submit job lên cụm spark. Job xử lý dữ liệu dạng streaming (liên tục)
-    image: docker.io/bitnami/spark:3.3 #image:tag
+    image: apache/spark:3.5.3 #image spark
     container_name: ktech_spark_submit #tên container
     environment: #xác định spark kết nối với database nào. Biến được khởi tạo trong .env
       INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}  #chỉ định database sẽ ghi vào
@@ -160,11 +160,14 @@ services:
       INFLUX_ORG: ${INFLUX_ORG} #Tên organization 
       INFLUX_TOKEN: ${INFLUX_TOKEN} #Access token
     volumes:
-      - ./:/app/ #mount thư mục hiện tại vào /app trong contianer
+      - ./:/app/ #mount thư mục hiện tại vào /app trong container
       - ./packages/postgresql-42.5.4.jar:/opt/bitnami/spark/jars/postgresql-42.5.4.jar #thêm .jar của postgresql vào spark để spark có thể ghi dữ liệu ra postgresql
     #Lệnh được chạy trong container:
     #Cài đặt requirement.txt => tải package kafka connector => báo hiệu hãy gửi job đến spark_master:7077. consusmer.py là python chứa spark streaming job
-    command: [ "sh", "-c", "pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/consumer.py" ]
+    command: 
+    - sh
+    - -c
+    - pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/consumer.py
     depends_on: #yêu cầu spark master chạy trước
       - spark-master
 #    restart: unless-stopped
@@ -172,28 +175,31 @@ services:
       - broker-kafka
 
   spark-submit2: #submit job lên cụm spark. Job xử lý dữ liệu dạng batch (theo lô)
-    image: docker.io/bitnami/spark:3.3 #image
+    image: apache/spark:3.5.3 #image spark
     container_name: spark-batch-processing #tên container
     volumes:
       - ./:/app/ #mount volume
     #cài requirement.txt => cài package kafka connector => gửi job batch processing lên spark master
-    command: [ "sh", "-c", "pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/batch_processing.py" ]
+    command: 
+    - sh
+    - -c
+    - pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/batch_processing.py
     depends_on: #cần spark master khởi tạo trước
       - spark-master
     networks:
       - broker-kafka
 
   spark-worker: #spark worker chạy công việc được giao từ spark master
-    image: docker.io/bitnami/spark:3.3 
+    image: apache/spark:3.5.3 #image spark
     environment:
       SPARK_MODE: worker
       SPARK_MASTER_URL: spark://spark-master:7077 #địa chỉ của spark măster
       SPARK_WORKER_MEMORY: 1G #giới hạn tài nguyên cho worker 1GB RAM, 1 CPU Core
       SPARK_WORKER_CORES: 1
-      SPARK_RPC_AUTHENTICATION_ENABLED: no #bỏ xác thực và mã hóa RPC
-      SPARK_RPC_ENCRYPTION_ENABLED: no
-      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
-      SPARK_SSL_ENABLED: no
+      SPARK_RPC_AUTHENTICATION_ENABLED: false #bỏ xác thực và mã hóa RPC
+      SPARK_RPC_ENCRYPTION_ENABLED: false
+      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: false
+      SPARK_SSL_ENABLED: false
       SPARK_USER: spark #user là spark
     ports:
       - "8081:8081" #ánh xạ đến cổng port 8081
@@ -201,16 +207,16 @@ services:
       - broker-kafka #gán network
 
   spark-worker2: #tương tự spark-worker
-    image: docker.io/bitnami/spark:3.3
+    image: apache/spark:3.5.3
     environment:
       SPARK_MODE: worker
       SPARK_MASTER_URL: spark://spark-master:7077
       SPARK_WORKER_MEMORY: 1G
       SPARK_WORKER_CORES: 1
-      SPARK_RPC_AUTHENTICATION_ENABLED: no
-      SPARK_RPC_ENCRYPTION_ENABLED: no
-      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
-      SPARK_SSL_ENABLED: no
+      SPARK_RPC_AUTHENTICATION_ENABLED: false
+      SPARK_RPC_ENCRYPTION_ENABLED: false
+      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: false
+      SPARK_SSL_ENABLED: false
       SPARK_USER: spark
     ports:
       - "8082:8082"
@@ -220,7 +226,9 @@ services:
   namenode: #namenode phục vụ cho HDFS
     image: apache/hadoop:3 #image hadooop
     hostname: namenode #tên container trong network
-    command: [ "hdfs", "namenode" ]  #command khởi động namenode, giúp khởi động tiến trình namenode
+    command:
+    - hdfs
+    - namenode
     depends_on: #yêu cầu resourcemanager và nodemanager khởi động trước (là các thành phần của YARN)
       - resourcemanager
       - nodemanager
@@ -276,7 +284,7 @@ services:
     restart: on-failure
 
   influxdb: #InfluxDB: database dạng time-series để lưu trữ dữ liệu thời gian thực
-    image: bitnami/influxdb:2.5.1 #image influxdb
+    image: influxdb:2.7
     container_name: influxdb #tên container
     restart: always #tự động khởi động lại nếu gặp lỗi hoặc bị tắt
     ports:

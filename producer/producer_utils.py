@@ -64,7 +64,7 @@ def retrieve_real_time_data(producer, stock_symbol, kafka_topic): # hàm lấy d
             start_time = end_time - timedelta(days=1) #lấy thời gian bắt đầu là 1 ngày trước thời gian kết thúc
             for symbol_index, stock_symbol in enumerate(stock_symbols): #lặp qua từng mã chứng khoán trong danh sách
                 real_time_data = yf.download(
-                    stock_symbol, start=start_time, end=end_time, interval="1m") #lấy dữ liệu chứng khoán trong khoảng thời gian với khoảng cách 1 phút
+                    stock_symbol, start=start_time, end=end_time, interval="5m") #lấy dữ liệu chứng khoán trong khoảng thời gian với khoảng cách 1 phút
                 if not real_time_data.empty: #kiểm tra nếu dữ liệu không rỗng
                     # Convert and send the latest real-time data point to Kafka
                     stock_symbol_new = stock_symbol #khởi tạo biến mã chứng khoán mới

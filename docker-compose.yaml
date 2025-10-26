@@ -199,7 +199,7 @@ services:
       pip install --upgrade pip setuptools wheel && \
       pip install --upgrade requests chardet && \
       pip install -r /app/requirements.txt && \
-      /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/consumer.py
+      /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/batch_processing.py
     depends_on: #yêu cầu spark master chạy trước
       - spark-master
     networks:

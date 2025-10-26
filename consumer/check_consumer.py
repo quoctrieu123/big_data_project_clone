@@ -10,10 +10,11 @@ from dotenv import load_dotenv #tải biến môi trường từ file .env
 
 load_dotenv() #tải biến môi trường từ file .env
 env_vars = load_environment_variables() #đict các biến môi trường từ file .env
+KAFKA_BROKERS = "localhost:9092,localhost:9093,localhost:9094"
 # Cấu hình cho Kafka Consumer
 conf = {
     # Pointing to brokers. Ensure these match the host and ports of your Kafka brokers.
-    'bootstrap.servers': env_vars.get("KAFKA_BROKERS"), #lấy địa chỉ các broker từ biến môi trường
+    'bootstrap.servers': KAFKA_BROKERS, #lấy địa chỉ các broker từ biến môi trường
     'group.id': "myGroup",  #các consumer trong cùng một group sẽ chia sẻ công việc đọc tin nhắn từ tất cả các partition
     'auto.offset.reset': 'earliest'  # bắt đầu đọc từ đầu topic nếu không có offset đã lưu
 #latest: bắt đầu đọc message từ thời điểm đã lưu

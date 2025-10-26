@@ -2,7 +2,7 @@
 import pyhdfs #python client cho hdfs
 import uuid #tạo mã định danh duy nhất
 
-hdfs = pyhdfs.HdfsClient(hosts="localhost:9870", user_name="hdfs") #kết nối đến HDFS namenode của cụm hdfs
+hdfs = pyhdfs.HdfsClient(hosts="namenode:9870", user_name="hdfs") #kết nối đến HDFS namenode của cụm hdfs
 
 userhomedir = hdfs.get_home_directory() #lấy thư mục home của user hdfs
 # print(userhomedir)

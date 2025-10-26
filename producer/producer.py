@@ -9,10 +9,11 @@ from dotenv import load_dotenv
 from producer_utils import retrieve_real_time_data #hàm lấy dữ liệu thời gian thực và gửi đến Kafka từ producer_utils.py
 load_dotenv()
 env_vars = load_environment_variables()
+KAFKA_BROKERS = "localhost:9092,localhost:9093,localhost:9094"
 # Configuration for Kafka Producer
 conf = {
     # Pointing to all three brokers
-    'bootstrap.servers': env_vars.get("KAFKA_BROKERS"),
+    'bootstrap.servers': KAFKA_BROKERS,
     'client.id': socket.gethostname(),
     'enable.idempotence': True,
 }

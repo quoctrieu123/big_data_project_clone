@@ -21,12 +21,11 @@ load_dotenv()
 env_vars = load_environment_variables()  #tải biến môi trường từ file .env
 # Configuration for Kafka Producer
 
-
-
+KAFKA_BROKERS = "localhost:9092,localhost:9093,localhost:9094"
 # Cấu hình cho Kafka Producer
 conf = {
     # Pointing to all three brokers
-    'bootstrap.servers': env_vars.get("KAFKA_BROKERS"), #lấy địa chỉ các broker từ biến môi trường
+    'bootstrap.servers': KAFKA_BROKERS, #lấy địa chỉ các broker từ biến môi trường
     'client.id': socket.gethostname(), #sử dụng hostname của máy làm client id
     'enable.idempotence': True, #đảm bảo tính idempotence để tránh trùng lặp tin nhắn
 }

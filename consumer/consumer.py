@@ -77,8 +77,8 @@ if __name__ == "__main__":
         StructField("volume", DoubleType(), True)
     ])
 
-    
-    stockDataframe = inputStream.select(from_json(col("data"), stock_price_schema).alias("stock_price")) #parse cột data từ định dạng JSON sang cấu trúc dữ liệu đã định nghĩa trong stock_price_schema
+    options = {"caseSensitive": "false"} #các tùy chọn để parse json, ở đây đặt caseSensitive là true để phân biệt chữ hoa và chữ thường trong tên trường
+    stockDataframe = inputStream.select(from_json(col("data"), stock_price_schema, options).alias("stock_price")) #parse cột data từ định dạng JSON sang cấu trúc dữ liệu đã định nghĩa trong stock_price_schema
     expandedDf = stockDataframe.select("stock_price.*") #biến tất cả các trường trong cấu trúc stock_price thành các cột riêng biệt trong dataframe
     influxdb_writer = InfluxDBWriter('primary', 'stock-price-v1') #khởi tạo đối tượng InfluxDBWriter để ghi dữ liệu vào InfluxDB
     #influxdb_writer = InfluxDBWriter(os.environ.get("INFLUXDB_BUCKET"), os.environ.get("INFLUXDB_MEASUREMENT"))

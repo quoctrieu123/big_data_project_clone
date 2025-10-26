@@ -1,5 +1,4 @@
 #Docker compose: giúp chạy nhiều container cùng một lúc
-version: '2.1'
 
 services:
   zoo1: #tên service. Đây là zookeeper giúp quản lý kafka
@@ -150,10 +149,14 @@ services:
     restart: unless-stopped #tự động restart nếu gặp lỗi
     networks:
       - broker-kafka #gán network cùng kafka
+    command: >
+      sh -c "/opt/spark/sbin/start-master.sh && 
+             tail -f /dev/null"
 
   spark-submit: #submit: giúp submit job lên cụm spark. Job xử lý dữ liệu dạng streaming (liên tục)
     image: apache/spark:3.5.3 #image spark
     container_name: ktech_spark_submit #tên container
+    user: root #chạy với quyền root để có thể cài đặt package
     environment: #xác định spark kết nối với database nào. Biến được khởi tạo trong .env
       INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}  #chỉ định database sẽ ghi vào
       INFLUXDB_MEASUREMENT: ${INFLUXDB_MEASUREMENT} #chỉ định bảng sẽ ghi vào
@@ -161,13 +164,19 @@ services:
       INFLUX_TOKEN: ${INFLUX_TOKEN} #Access token
     volumes:
       - ./:/app/ #mount thư mục hiện tại vào /app trong container
-      - ./packages/postgresql-42.5.4.jar:/opt/bitnami/spark/jars/postgresql-42.5.4.jar #thêm .jar của postgresql vào spark để spark có thể ghi dữ liệu ra postgresql
+      - ./packages/postgresql-42.5.4.jar:/opt/spark/jars/postgresql-42.5.4.jar #thêm .jar của postgresql vào spark để spark có thể ghi dữ liệu ra postgresql
     #Lệnh được chạy trong container:
     #Cài đặt requirement.txt => tải package kafka connector => báo hiệu hãy gửi job đến spark_master:7077. consusmer.py là python chứa spark streaming job
-    command: 
+    command:
     - sh
     - -c
-    - pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/consumer.py
+    - |
+      apt-get update && \
+      apt-get install -y python3-dev gcc build-essential && \
+      pip install --upgrade pip setuptools wheel && \
+      pip install --upgrade requests chardet && \
+      pip install -r /app/requirements.txt && \
+      /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/consumer.py
     depends_on: #yêu cầu spark master chạy trước
       - spark-master
 #    restart: unless-stopped
@@ -177,14 +186,21 @@ services:
   spark-submit2: #submit job lên cụm spark. Job xử lý dữ liệu dạng batch (theo lô)
     image: apache/spark:3.5.3 #image spark
     container_name: spark-batch-processing #tên container
+    user: root #chạy với quyền root để có thể cài đặt package
     volumes:
       - ./:/app/ #mount volume
     #cài requirement.txt => cài package kafka connector => gửi job batch processing lên spark master
     command: 
     - sh
     - -c
-    - pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/batch_processing.py
-    depends_on: #cần spark master khởi tạo trước
+    - |
+      apt-get update && \
+      apt-get install -y python3-dev gcc build-essential && \
+      pip install --upgrade pip setuptools wheel && \
+      pip install --upgrade requests chardet && \
+      pip install -r /app/requirements.txt && \
+      /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/consumer.py
+    depends_on: #yêu cầu spark master chạy trước
       - spark-master
     networks:
       - broker-kafka
@@ -205,6 +221,10 @@ services:
       - "8081:8081" #ánh xạ đến cổng port 8081
     networks:
       - broker-kafka #gán network
+    restart: unless-stopped #tự động khởi động lại nếu gặp lỗi
+    command: >
+      sh -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 && 
+             tail -f /dev/null"
 
   spark-worker2: #tương tự spark-worker
     image: apache/spark:3.5.3
@@ -222,6 +242,10 @@ services:
       - "8082:8082"
     networks:
       - broker-kafka
+    restart: unless-stopped
+    command: >
+      sh -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 && 
+             tail -f /dev/null"
 
   namenode: #namenode phục vụ cho HDFS
     image: apache/hadoop:3 #image hadooop
@@ -290,7 +314,7 @@ services:
     ports:
       - 8086:8086 #ánh xạ cổng bên ngoài để truy cập InfluxDB
     volumes:
-      - .\influxdb:/bitnami/influxdb #mount thư mục influxdb trên máy host vào thư mục trong container để lưu trữ dữ liệu bền vững
+      - .\influxdb:/var/lib/influxdb2 #mount thư mục influxdb trên máy host vào thư mục trong container để lưu trữ dữ liệu bền vững
     environment:
       INFLUXDB_ADMIN_USER_PASSWORD: ${INFLUXDB_ADMIN_USER_PASSWORD} #các biến môi trường xác thực truy cập influxdb, được lấy từ file .env
       INFLUXDB_USER: ${INFLUXDB_USER}
